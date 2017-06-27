@@ -1,13 +1,16 @@
 from setuptools import setup, find_packages
 
-VERSION = "0.1"
+VERSION = "0.2"
 
 setup(
     name="common_helper_yara",
     version=VERSION,
     packages=find_packages(),
     install_requires=[
-        'yara-python >= 3.6'
+        'common_helper_files'
+    ],
+    dependency_links=[
+        'git+ssh://git@atlassian-net.cs.uni-bonn.de:7999/ch/common_helper_files.git#common_helper_files'
     ],
     description="Yara command line binding",
     author="Fraunhofer FKIE",

@@ -1,4 +1,4 @@
-rule lighttpd
+rule lighttpd_simple
 {
 	meta:
 		software_name = "lighttpd"

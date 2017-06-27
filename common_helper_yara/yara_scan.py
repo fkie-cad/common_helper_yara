@@ -1,11 +1,13 @@
-import subprocess
+from subprocess import check_output, CalledProcessError, STDOUT
 import sys
 import re
 import json
 import logging
 
+from .common import convert_external_variables
 
-def scan(signature_path, file_path, external_variables={}):
+
+def scan(signature_path, file_path, external_variables={}, recursive=False):
     '''
     Scan files and return matches
 
@@ -15,21 +17,18 @@ def scan(signature_path, file_path, external_variables={}):
     :type file_path: string
     :return: dict
     '''
-    variables = _convert_external_variables(external_variables)
-    with subprocess.Popen('yara {} --print-meta --print-strings {} {}'.format(variables, signature_path, file_path), shell=True, stdout=subprocess.PIPE) as process:
-        output = process.stdout.read().decode()
+    variables = convert_external_variables(external_variables)
+    recursive = '-r' if recursive else ''
     try:
-        return _parse_yara_output(output)
+        scan_result = check_output("yara {} {} --print-meta --print-strings {} {}".format(variables, recursive, signature_path, file_path), shell=True, stderr=STDOUT)
+    except CalledProcessError as e:
+        logging.error("There seems to be an error in the rule file:\n{}".format(e.output.decode()))
+        return {}
+    try:
+        return _parse_yara_output(scan_result.decode())
     except Exception as e:
         logging.error('Could not parse yara result: {} {}'.format(sys.exc_info()[0].__name__, e))
         return {}
-
-
-def _convert_external_variables(ext_var_dict):
-    output = []
-    for ext_var in ext_var_dict:
-        output.append('-d {}={}'.format(ext_var, ext_var_dict[ext_var]))
-    return " ".join(sorted(output))
 
 
 def _parse_yara_output(output):
