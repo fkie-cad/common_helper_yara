@@ -14,7 +14,6 @@ def get_all_matched_strings(yara_result_dict):
 
 def _get_matched_strings_of_single_rule(yara_match):
     matched_strings = set()
-    print(yara_match['strings'])
     for string_item in yara_match['strings']:
-        matched_strings.add(string_item[2])
+        matched_strings.add(string_item[2].decode('utf-8', 'replace'))
     return matched_strings
