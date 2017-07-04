@@ -24,7 +24,7 @@ def compile_rules(input_dir, out_file, external_variables={}):
 
 def _create_joint_signature_file(directory, tmp_file):
     all_signatures = list()
-    for signature_file in get_files_in_dir(directory):
+    for signature_file in sorted(get_files_in_dir(directory)):
         with open(signature_file, 'rb') as fd:
             all_signatures.append(fd.read())
     with open(tmp_file.name, 'wb') as fd:
