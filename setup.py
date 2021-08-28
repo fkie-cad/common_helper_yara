@@ -10,7 +10,7 @@ setup(
         'common_helper_files'
     ],
     dependency_links=[
-        'git+https://github.com/fkie-cad/common_helper_files.git#common_helper_files'
+        'common_helper_files @ git+https://github.com/fkie-cad/common_helper_files.git'
     ],
     description="Yara command line binding",
     author="Fraunhofer FKIE",
