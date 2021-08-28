@@ -7,9 +7,6 @@ setup(
     version=VERSION,
     packages=find_packages(),
     install_requires=[
-        'common_helper_files'
-    ],
-    dependency_links=[
         'common_helper_files @ git+https://github.com/fkie-cad/common_helper_files.git'
     ],
     description="Yara command line binding",
