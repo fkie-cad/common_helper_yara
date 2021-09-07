@@ -1,11 +1,13 @@
 # general things to ignore
-build/
-dist/
-*.egg-info/
+.coverage
 *.egg
+*.egg-info/
 *.py[cod]
-__pycache__/
 *.so
 *~
+.idea
 .project
 .pydevproject
+__pycache__/
+build/
+dist/
