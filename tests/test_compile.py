@@ -1,24 +1,24 @@
-import os
-import unittest
-from common_helper_yara.yara_compile import compile_rules
-from common_helper_yara.yara_scan import scan
+from distutils.version import LooseVersion
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from common_helper_yara.common import get_yara_version
+from common_helper_yara.yara_compile import compile_rules
+from common_helper_yara.yara_scan import scan
 
-DIR_OF_CURRENT_FILE = os.path.dirname(os.path.abspath(__file__))
+DIR_OF_CURRENT_FILE = Path(__file__).parent
+COMPILED_FLAG = get_yara_version() >= LooseVersion('3.9')
 
 
-class TestYaraCompile(unittest.TestCase):
-
-    def test_compile_and_scan(self):
-        tmp_dir = TemporaryDirectory(prefix="common_helper_yara_test_")
-        input_dir = os.path.join(DIR_OF_CURRENT_FILE, 'data/rules')
-        signature_file = os.path.join(tmp_dir.name, 'test.yc')
-        data_files = os.path.join(DIR_OF_CURRENT_FILE, 'data/data_files')
+def test_compile_and_scan():
+    with TemporaryDirectory(prefix="common_helper_yara_test_") as tmp_dir:
+        input_dir = DIR_OF_CURRENT_FILE / 'data/rules'
+        signature_file = Path(tmp_dir) / 'test.yc'
+        data_files = DIR_OF_CURRENT_FILE / 'data/data_files'
 
         compile_rules(input_dir, signature_file, external_variables={'test_flag': 'true'})
-        self.assertTrue(os.path.exists(signature_file), "file not created")
+        assert signature_file.exists(), "file not created"
 
-        result = scan(signature_file, data_files, recursive=True)
-        self.assertIn('lighttpd', result.keys(), "at least one match missing")
-        self.assertIn('lighttpd_simple', result.keys(), "at least one match missing")
+        result = scan(signature_file, data_files, recursive=True, compiled=COMPILED_FLAG)
+        assert 'lighttpd' in result.keys(), "at least one match missing"
+        assert 'lighttpd_simple' in result.keys(), "at least one match missing"
