@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = "0.2"
+VERSION = "0.2.1"
 
 setup(
     name="common_helper_yara",
@@ -9,6 +9,13 @@ setup(
     install_requires=[
         'common_helper_files @ git+https://github.com/fkie-cad/common_helper_files.git'
     ],
+    extras_require={
+        'dev': [
+            'pytest',
+            'pytest-pycodestyle',
+            'pytest-cov'
+        ]
+    },
     description="Yara command line binding",
     author="Fraunhofer FKIE",
     author_email="peter.weidenbach@fkie.fraunhofer.de",
