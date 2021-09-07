@@ -20,5 +20,7 @@ jobs:
         run: |
           python3 -m pip install -U pip
           python3 -m pip install --editable .[dev]
+      - name: install yara
+        run: sudo apt-get install yara
       - name: run pytest
         run: pytest
