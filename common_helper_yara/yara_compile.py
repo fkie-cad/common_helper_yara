@@ -1,4 +1,7 @@
-from common_helper_files.fail_safe_file_operations import get_files_in_dir
+from pathlib import Path
+from shlex import split
+from typing import Dict, Optional, Any, Union
+
 import logging
 import subprocess
 from tempfile import NamedTemporaryFile
@@ -6,34 +9,36 @@ from tempfile import NamedTemporaryFile
 from .common import convert_external_variables
 
 
-def compile_rules(input_dir, out_file, external_variables={}):
+def compile_rules(
+    input_dir: Union[str, Path],
+    out_file: Union[str, Path],
+    external_variables: Optional[Dict[str, Any]] = None,
+):
     '''
     compile yara files in input dir
 
     :param input_dir: directory with yara rules
-    :type input_dir: string
     :param out_file: path to store the compiled yara rules
-    :type out_file: string
-    :return: None
+    :param external_variables: define external variables
     '''
+    if external_variables is None:
+        external_variables = {}
     with NamedTemporaryFile(mode='w') as tmp_file:
-        _create_joint_signature_file(input_dir, tmp_file)
+        _create_joint_signature_file(Path(input_dir), tmp_file)
         _create_compiled_signature_file(out_file, tmp_file, external_variables)
-    return None
 
 
-def _create_joint_signature_file(directory, tmp_file):
-    all_signatures = list()
-    for signature_file in sorted(get_files_in_dir(directory)):
-        with open(signature_file, 'rb') as fd:
-            all_signatures.append(fd.read())
-    with open(tmp_file.name, 'wb') as fd:
-        fd.write(b'\x0a'.join(all_signatures))
+def _create_joint_signature_file(directory: Path, tmp_file: NamedTemporaryFile):
+    all_signatures = [
+        signature_file.read_bytes()
+        for signature_file in directory.iterdir()
+    ]
+    Path(tmp_file.name).write_bytes(b'\n'.join(all_signatures))
 
 
-def _create_compiled_signature_file(out_file, tmp_file, external_variables):
+def _create_compiled_signature_file(out_file: Path, tmp_file: NamedTemporaryFile, external_variables: dict):
     variables = convert_external_variables(external_variables)
     try:
-        subprocess.run('yarac {} {} {}'.format(variables, tmp_file.name, out_file), shell=True, check=True)
+        subprocess.run(split(f'yarac {variables} {tmp_file.name} {out_file}'), check=True)
     except subprocess.CalledProcessError:
-        logging.error('Creation of {} failed !!'.format(out_file))
+        logging.error(f'Creation of {out_file} failed!')

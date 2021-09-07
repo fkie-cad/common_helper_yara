@@ -1,19 +1,22 @@
-def get_all_matched_strings(yara_result_dict):
-    '''
-    returns a set of all matched strings
+from typing import Set
 
-    :param yara_result_dict: a result dict
-    :type yara_result_dict: dict
-    :return: set
+
+def get_all_matched_strings(yara_result_dict: dict) -> Set[str]:
     '''
-    matched_strings = set()
-    for matched_rule in yara_result_dict:
-        matched_strings.update(_get_matched_strings_of_single_rule(yara_result_dict[matched_rule]))
-    return matched_strings
+    Get all strings matched by the yara rules
+
+    :param yara_result_dict: a yara result dict
+    :return: a set of all matched strings
+    '''
+    return {
+        string
+        for matched_rule in yara_result_dict.values()
+        for string in _get_matched_strings_of_single_rule(matched_rule)
+    }
 
 
 def _get_matched_strings_of_single_rule(yara_match):
-    matched_strings = set()
-    for string_item in yara_match['strings']:
-        matched_strings.add(string_item[2].decode('utf-8', 'replace'))
-    return matched_strings
+    return {
+        string_item[2].decode('utf-8', 'replace')
+        for string_item in yara_match['strings']
+    }

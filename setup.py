@@ -1,14 +1,11 @@
 from setuptools import setup, find_packages
 
-VERSION = "0.2.1"
+VERSION = "0.3"
 
 setup(
     name="common_helper_yara",
     version=VERSION,
     packages=find_packages(),
-    install_requires=[
-        'common_helper_files @ git+https://github.com/fkie-cad/common_helper_files.git'
-    ],
     extras_require={
         'dev': [
             'pytest',
