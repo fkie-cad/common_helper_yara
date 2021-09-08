@@ -62,7 +62,7 @@ def _split_output_in_rules_and_matches(output):
     while '' in match_blocks:
         match_blocks.remove('')
 
-    rule_regex = re.compile(r'(.*)\s\[(.*)]\s([/]|[./])(.+)')
+    rule_regex = re.compile(r'(.*)\s\[(.*)]\s(?=/|./|../)(.+)')
     rules = rule_regex.findall(output)
 
     assert len(match_blocks) == len(rules)
@@ -70,17 +70,15 @@ def _split_output_in_rules_and_matches(output):
 
 
 def _append_match_to_result(match, resulting_matches, rule):
-    assert len(rule) == 4
-    rule_name, meta_string, _, _ = rule
-    assert len(match) == 4
+    assert len(rule) == 3, f'rule was parsed incorrectly: {rule}'
+    rule_name, meta_string, _ = rule
+    assert len(match) == 4, f'match was parsed incorrectly: {match}'
     _, offset, matched_tag, matched_string = match
 
     meta_dict = _parse_meta_data(meta_string)
 
-    this_match = resulting_matches[rule_name] if rule_name in resulting_matches else dict(rule=rule_name, matches=True, strings=list(), meta=meta_dict)
-
+    this_match = resulting_matches.setdefault(rule_name, dict(rule=rule_name, matches=True, strings=[], meta=meta_dict))
     this_match['strings'].append((int(offset, 16), matched_tag, matched_string.encode()))
-    resulting_matches[rule_name] = this_match
 
 
 def _parse_meta_data(meta_data_string):

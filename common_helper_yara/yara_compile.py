@@ -31,7 +31,7 @@ def compile_rules(
 def _create_joint_signature_file(directory: Path, tmp_file: NamedTemporaryFile):
     all_signatures = [
         signature_file.read_bytes()
-        for signature_file in directory.iterdir()
+        for signature_file in sorted(directory.iterdir())
     ]
     Path(tmp_file.name).write_bytes(b'\n'.join(all_signatures))
 
