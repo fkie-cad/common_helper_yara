@@ -36,7 +36,7 @@ def scan(
         scan_result = check_output(command, shell=True, stderr=STDOUT)
         return _parse_yara_output(scan_result.decode())
     except CalledProcessError as e:
-        logging.error(f"There seems to be an error in the rule file:\n{e.output.decode()}")
+        logging.error(f'There seems to be an error in the rule file:\n{e.output.decode()}', exc_info=True)
         return {}
     except Exception as e:
         logging.error(f'Could not parse yara result: {e}', exc_info=True)
