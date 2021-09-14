@@ -1,11 +1,14 @@
-import json
 import logging
 import re
 from pathlib import Path
 from subprocess import check_output, CalledProcessError, STDOUT
-from typing import Optional, Any, Dict, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from .common import convert_external_variables
+
+
+_RULE_BLOCK_REGEX = re.compile(r'^(?P<rule>\w+)\s+\[(?P<raw_meta>.*)\]\s+(?P<scanned_file>.*)\n(?P<raw_matches>(?:0x[a-f0-9]+.*(?:[\n]|$))+)', flags=re.MULTILINE)
+_YARA_MATCH_REGEX = re.compile(r'^(?P<offset>0x[a-f0-9]+):(?P<tag>\S+):\s(?P<string>.+)$', flags=re.MULTILINE)
 
 
 def scan(
@@ -43,54 +46,47 @@ def scan(
         return {}
 
 
-def _parse_yara_output(output):
-    resulting_matches = dict()
-
-    match_blocks, rules = _split_output_in_rules_and_matches(output)
-
-    matches_regex = re.compile(r'((0x[a-f0-9]*):(\S+):\s(.+))+')
-    for index, rule in enumerate(rules):
-        for match in matches_regex.findall(match_blocks[index]):
-            _append_match_to_result(match, resulting_matches, rule)
-
-    return resulting_matches
+def _add_yara_rule_match(rule_block: dict, block: dict):
+    # the file path that that is scanned does not reflect in the result set?
+    # rule_block['strings'] += [(*yara_match, block['scanned_file']) for yara_match in parse_matches(block['raw_matches'])]
+    rule_block['strings'] += [yara_match for yara_match in _parse_matches(block['raw_matches'])]
 
 
-def _split_output_in_rules_and_matches(output):
-    split_regex = re.compile(r'\n*.*\[.*]\s/.+\n*')
-    match_blocks = split_regex.split(output)
-    while '' in match_blocks:
-        match_blocks.remove('')
-
-    rule_regex = re.compile(r'(.*)\s\[(.*)]\s(?=/|./|../)(.+)')
-    rules = rule_regex.findall(output)
-
-    assert len(match_blocks) == len(rules)
-    return match_blocks, rules
+def _parse_yara_output(output: str) -> dict:
+    results = dict()
+    for block in _find_rule_blocks(output):
+        rule_block = _init_rule_block_entry(results, block)
+        _add_yara_rule_match(rule_block, block)
+    return results
 
 
-def _append_match_to_result(match, resulting_matches, rule):
-    assert len(rule) == 3, f'rule was parsed incorrectly: {rule}'
-    rule_name, meta_string, _ = rule
-    assert len(match) == 4, f'match was parsed incorrectly: {match}'
-    _, offset, matched_tag, matched_string = match
-
-    meta_dict = _parse_meta_data(meta_string)
-
-    this_match = resulting_matches.setdefault(rule_name, dict(rule=rule_name, matches=True, strings=[], meta=meta_dict))
-    this_match['strings'].append((int(offset, 16), matched_tag, matched_string.encode()))
+def _find_rule_blocks(output: str) -> List[Dict[str, str]]:
+    return [match.groupdict() for match in _RULE_BLOCK_REGEX.finditer(output)]
 
 
-def _parse_meta_data(meta_data_string):
+def _init_rule_block_entry(results: dict, block: dict) -> dict:
+    rule_name = block['rule']
+    if rule_name not in results:
+        meta = _parse_meta_data(block)
+        results[rule_name] = dict(rule=rule_name, matches=True, meta=meta, strings=list())
+    return results[rule_name]
+
+
+def _parse_matches(raw_matches: str) -> List[Tuple[int, str, bytes]]:
+    groups = [match.groupdict() for match in _YARA_MATCH_REGEX.finditer(raw_matches)]
+    return [(int(group['offset'], 16), group['tag'], group['string'].encode()) for group in groups]
+
+
+def _parse_meta_data(block: dict) -> Dict[str, str]:
     '''
     Will be of form 'item0=lowercaseboolean0,item1="value1",item2=value2,..'
     '''
     meta_data = dict()
-    for item in meta_data_string.split(','):
+    for item in block['raw_meta'].split(','):
         if '=' in item:
             key, value = item.split('=', maxsplit=1)
-            value = json.loads(value) if value in ['true', 'false'] else value.strip('"')
+            value = value == 'true' if value in ['true', 'false'] else value.strip('"')
             meta_data[key] = value
         else:
-            logging.warning(f'Malformed meta string \'{meta_data_string}\'')
+            logging.warning(f'Malformed meta string \'{block["raw_meta"]}\'')
     return meta_data
