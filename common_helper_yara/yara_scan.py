@@ -47,7 +47,7 @@ def scan(
 
 
 def _add_yara_rule_match(rule_block: dict, block: dict):
-    # the file path that that is scanned does not reflect in the result set?
+    # FIXME: the file path that that is scanned does not reflect in the result set.
     # rule_block['strings'] += [(*yara_match, block['scanned_file']) for yara_match in parse_matches(block['raw_matches'])]
     rule_block['strings'] += [yara_match for yara_match in _parse_matches(block['raw_matches'])]
 
